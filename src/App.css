@@ -157,19 +157,7 @@ body {
 
 .lightning-icon {
   color: #ffd700;
-  animation: lightning-pulse 1.5s infinite;
-}
-
-@keyframes lightning-pulse {
-
-  0%,
-  100% {
-    opacity: 1;
-  }
-
-  50% {
-    opacity: 0.5;
-  }
+  font-size: 0.8rem;
 }
 
 .task-time {

@@ -12,29 +12,46 @@ function App() {
   const [tasks, setTasks] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [pendingTaskSwitch, setPendingTaskSwitch] = useState(null);
+  const [isLoaded, setIsLoaded] = useState(false); // Track if data has been loaded
 
   // Load tasks from localStorage on component mount
   useEffect(() => {
-    const savedTasks = localStorage.getItem('tasks');
-    console.log('Loading from localStorage:', savedTasks);
-    if (savedTasks) {
+    console.log('Loading from localStorage...');
+    const savedTasks = localStorage.getItem('samaya-tasks');
+    console.log('Saved tasks:', savedTasks);
+
+    if (savedTasks && savedTasks !== 'undefined' && savedTasks !== 'null') {
       try {
         const parsedTasks = JSON.parse(savedTasks);
         console.log('Parsed tasks:', parsedTasks);
-        setTasks(parsedTasks);
+
+        if (Array.isArray(parsedTasks)) {
+          // Validate each task has required properties
+          const validTasks = parsedTasks.filter(task =>
+            task &&
+            typeof task.id === 'number' &&
+            typeof task.name === 'string' &&
+            typeof task.elapsedTime === 'number' &&
+            typeof task.isRunning === 'boolean'
+          );
+          console.log('Valid tasks:', validTasks);
+          setTasks(validTasks);
+        }
       } catch (error) {
         console.error('Error parsing saved tasks:', error);
+        localStorage.removeItem('samaya-tasks'); // Clear corrupted data
       }
     }
+    setIsLoaded(true); // Mark as loaded
   }, []);
 
-  // Save tasks to localStorage whenever they change
+  // Save tasks to localStorage whenever they change (only after initial load)
   useEffect(() => {
-    if (tasks.length > 0) {
+    if (isLoaded) {
       console.log('Saving tasks to localStorage:', tasks);
-      localStorage.setItem('tasks', JSON.stringify(tasks));
+      localStorage.setItem('samaya-tasks', JSON.stringify(tasks));
     }
-  }, [tasks]);
+  }, [tasks, isLoaded]);
 
   // Update running tasks timer
   useEffect(() => {
@@ -52,13 +69,22 @@ function App() {
   }, []);
 
   const addTask = (taskName) => {
+    console.log('Adding new task:', taskName);
     const newTask = {
       id: Date.now(),
       name: taskName,
       elapsedTime: 0,
       isRunning: false
     };
-    setTasks([...tasks, newTask]);
+
+    const updatedTasks = [...tasks, newTask];
+    setTasks(updatedTasks);
+
+    // Immediately save to localStorage to ensure new task persists
+    if (isLoaded) {
+      localStorage.setItem('samaya-tasks', JSON.stringify(updatedTasks));
+      console.log('Saved new task to localStorage');
+    }
   };
 
   const startTask = (taskId) => {
@@ -100,7 +126,9 @@ function App() {
   const handleCancelSwitch = () => {
     setShowModal(false);
     setPendingTaskSwitch(null);
-  }; const pauseTask = (taskId) => {
+  };
+
+  const pauseTask = (taskId) => {
     setTasks(tasks.map(task =>
       task.id === taskId
         ? { ...task, isRunning: false }
@@ -117,7 +145,25 @@ function App() {
   };
 
   const deleteTask = (taskId) => {
-    setTasks(tasks.filter(task => task.id !== taskId));
+    console.log('Deleting task with ID:', taskId);
+    const updatedTasks = tasks.filter(task => task.id !== taskId);
+    console.log('Updated tasks after deletion:', updatedTasks);
+
+    // Update state
+    setTasks(updatedTasks);
+
+    // Immediately save to localStorage to ensure deletion persists
+    if (isLoaded) {
+      localStorage.setItem('samaya-tasks', JSON.stringify(updatedTasks));
+      console.log('Saved updated tasks to localStorage after deletion');
+    }
+  };
+
+  // Function to clear all data (for debugging or reset)
+  const clearAllData = () => {
+    console.log('Clearing all data');
+    setTasks([]);
+    localStorage.removeItem('samaya-tasks');
   };
 
   const activeTasks = tasks.filter(task => task.isRunning).length;
