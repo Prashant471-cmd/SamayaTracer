@@ -144,10 +144,32 @@ body {
 
 .task-item.running {
   border: 1px solid var(--primary-color);
+  background: rgba(100, 108, 255, 0.1);
+  box-shadow: 0 0 10px rgba(100, 108, 255, 0.3);
 }
 
 .task-name {
   font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.lightning-icon {
+  color: #ffd700;
+  animation: lightning-pulse 1.5s infinite;
+}
+
+@keyframes lightning-pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
 }
 
 .task-time {

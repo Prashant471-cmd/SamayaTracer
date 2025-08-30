@@ -1,5 +1,5 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlay, faPause, faRotateLeft, faTrash } from '@fortawesome/free-solid-svg-icons';
+import { faPlay, faPause, faRotateLeft, faTrash, faBolt } from '@fortawesome/free-solid-svg-icons';
 
 const TaskItem = ({ task, onStart, onPause, onReset, onDelete }) => {
   const formatTime = (seconds) => {
@@ -11,7 +11,12 @@ const TaskItem = ({ task, onStart, onPause, onReset, onDelete }) => {
 
   return (
     <div className={`task-item ${task.isRunning ? 'running' : ''}`}>
-      <div className="task-name">{task.name}</div>
+      <div className="task-name">
+        {task.isRunning && (
+          <FontAwesomeIcon icon={faBolt} className="lightning-icon" />
+        )}
+        {task.name}
+      </div>
       <div className="task-time">{formatTime(task.elapsedTime)}</div>
       <div className="task-controls">
         {!task.isRunning ? (

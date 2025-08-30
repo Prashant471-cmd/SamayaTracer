@@ -4,31 +4,44 @@ import Header from './components/Header'
 import Stats from './components/Stats'
 import TaskForm from './components/TaskForm'
 import TaskList from './components/TaskList'
+import ConfirmationModal from './components/ConfirmationModal'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faBrain } from '@fortawesome/free-solid-svg-icons'
 
 function App() {
   const [tasks, setTasks] = useState([]);
+  const [showModal, setShowModal] = useState(false);
+  const [pendingTaskSwitch, setPendingTaskSwitch] = useState(null);
 
   // Load tasks from localStorage on component mount
   useEffect(() => {
     const savedTasks = localStorage.getItem('tasks');
+    console.log('Loading from localStorage:', savedTasks);
     if (savedTasks) {
-      setTasks(JSON.parse(savedTasks));
+      try {
+        const parsedTasks = JSON.parse(savedTasks);
+        console.log('Parsed tasks:', parsedTasks);
+        setTasks(parsedTasks);
+      } catch (error) {
+        console.error('Error parsing saved tasks:', error);
+      }
     }
   }, []);
 
   // Save tasks to localStorage whenever they change
   useEffect(() => {
-    localStorage.setItem('tasks', JSON.stringify(tasks));
+    if (tasks.length > 0) {
+      console.log('Saving tasks to localStorage:', tasks);
+      localStorage.setItem('tasks', JSON.stringify(tasks));
+    }
   }, [tasks]);
 
   // Update running tasks timer
   useEffect(() => {
     const interval = setInterval(() => {
-      setTasks(prevTasks => 
-        prevTasks.map(task => 
-          task.isRunning 
+      setTasks(prevTasks =>
+        prevTasks.map(task =>
+          task.isRunning
             ? { ...task, elapsedTime: task.elapsedTime + 1 }
             : task
         )
@@ -49,14 +62,45 @@ function App() {
   };
 
   const startTask = (taskId) => {
+    // Check if any other task is currently running
+    const runningTask = tasks.find(task => task.isRunning && task.id !== taskId);
+
+    if (runningTask) {
+      // Show custom modal if another task is running
+      const newTask = tasks.find(t => t.id === taskId);
+      setPendingTaskSwitch({
+        currentTask: runningTask.name,
+        newTask: newTask.name,
+        taskId: taskId
+      });
+      setShowModal(true);
+      return;
+    }
+
+    // If no other task is running, start immediately
     setTasks(tasks.map(task =>
       task.id === taskId
         ? { ...task, isRunning: true }
-        : task
+        : { ...task, isRunning: false }
     ));
   };
 
-  const pauseTask = (taskId) => {
+  const handleConfirmSwitch = () => {
+    if (pendingTaskSwitch) {
+      setTasks(tasks.map(task =>
+        task.id === pendingTaskSwitch.taskId
+          ? { ...task, isRunning: true }
+          : { ...task, isRunning: false }
+      ));
+    }
+    setShowModal(false);
+    setPendingTaskSwitch(null);
+  };
+
+  const handleCancelSwitch = () => {
+    setShowModal(false);
+    setPendingTaskSwitch(null);
+  }; const pauseTask = (taskId) => {
     setTasks(tasks.map(task =>
       task.id === taskId
         ? { ...task, isRunning: false }
@@ -80,7 +124,7 @@ function App() {
 
   return (
     <div className="container">
-      <Header onHome={() => {}} />
+      <Header onHome={() => { }} />
       <Stats totalTasks={tasks.length} activeTasks={activeTasks} />
       <TaskForm onAddTask={addTask} />
       {tasks.length > 0 ? (
@@ -98,6 +142,15 @@ function App() {
           <p>Add your first task to begin tracking your progress</p>
         </div>
       )}
+
+      {/* Custom Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showModal}
+        onConfirm={handleConfirmSwitch}
+        onCancel={handleCancelSwitch}
+        currentTask={pendingTaskSwitch?.currentTask}
+        newTask={pendingTaskSwitch?.newTask}
+      />
     </div>
   )
 }
